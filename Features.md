@@ -7,53 +7,42 @@
 - User types email and password
 - System checks if the password is correct
 - If correct, user gets a token and goes to the dashboard
-- If wrong, show "invalid email or password" (don't tell them which one was wrong)
-- After too many wrong tries, lock the account for some time
+- If wrong, show "invalid email or password"
 
 **Logout**
 - Delete the user's token
-- Send them back to the login page
+- Send back to the login page
 
 **Managing users** (only Super Admin)
 - Add a user by entering name, email and role
-- Send them a link so they can set their own password
 - Change someone's role
-- Turn off an account when someone leaves
-- Two rules: emails must be different for each user, and there must always be at least one Super Admin
 
 **Roles**
 - Every user has one role
 - Each role has a list of things it is allowed to do
 - Before doing anything, the system checks if that user's role is allowed
-- Important: check this on the **backend**, not just by hiding buttons in the frontend
 
 ---
 
 ## 2. Products
 
 **Add a product**
-- Fill in: SKU (unique code), name, category, supplier, cost price, selling price, quantity, reorder level, unit (kg, pieces, box)
-- SKU must be unique — no two products can have the same one
-- Cost price = what you paid. Selling price = what you charge. You need both.
-- Reorder level = when stock falls to this number, it counts as "low"
+- Fill: SKU , name, category, supplier, cost price, selling price, quantity,  unit (kg, pieces, box)
+- SKU must be unique
+- Cost price = what we paid. Selling price = what we charge
 
 **Edit a product**
-- Change any field except quantity
-- Quantity can only change through Stock Adjustment, so there is always a reason recorded
 
 **Delete a product**
-- If the product is on any old order → don't really delete it, just mark it inactive
-- If it was never used and stock is 0 → you can delete it fully
-- Deleting a product that is on an old order would break your order history
+- If the product is on any old order we will not delete it
+- If it was never used and stock is 0 we can delete it 
 
 **View products**
-- Show a list with page numbers (don't load all products at once)
+- Show a list with page numbers per page 10
 - Filter by category, supplier, or stock status
-- Sales Staff should not see the cost price
 
 **Search products**
 - Search by name or SKU
-- Wait until the user stops typing before searching
 
 ---
 
@@ -64,7 +53,7 @@
 - Two categories can't have the same name
 
 **Delete**
-- If products are using this category → don't allow delete, show how many products are using it
+- If products are using this category don't allow delete
 - If empty → mark it inactive
 
 **View**
@@ -75,7 +64,7 @@
 
 ## 4. Suppliers
 
-Suppliers are the people you **buy** from.
+Suppliers are the people we **buy** from.
 
 **Add / Edit**
 - Fill in: company name, contact person, email, phone, address
@@ -110,25 +99,25 @@ From the low stock page, the Admin can quickly create a purchase order for those
 - The storekeeper enters the real counted quantity
 - Then picks a reason: Damaged, Expired, Lost, Wrong Count
 - The system saves the difference with that reason
-- Reason must be compulsory, otherwise you will never know why stock changed
+- Reason must be compulsory, otherwise we will never know why stock changed
 
 ---
 
 ## 6. Purchase Orders (buying from suppliers)
 
-**Important:** a purchase order is just an order you placed. The goods have not arrived yet.
-So stock should **not** increase when you create it.
+**Important:** a purchase order is just an order we placed. The goods have not arrived yet.
+So stock should **not** increase when we create it.
 
 **Create a purchase order**
 - Pick a supplier
 - Add products with quantity and price
 - The total is calculated automatically
 - Save as draft, then submit it for approval
-- Admin approves it, then you send it to the supplier
+- Admin approves it, then we send it to the supplier
 - Stock does not change here
 
 **Edit a purchase order**
-- Draft → you can change anything
+- Draft → we can change anything
 - Approved → only small things like notes
 - Already received → cannot change
 
@@ -142,8 +131,8 @@ So stock should **not** increase when you create it.
 
 **Cancel a purchase order**
 - If nothing arrived yet → just cancel it
-- If some items already arrived → only cancel the remaining ones (you already have the other goods)
-- If everything arrived → you cannot cancel, you must return it instead
+- If some items already arrived → only cancel the remaining ones (we already have the other goods)
+- If everything arrived → we cannot cancel, we must return it instead
 
 **Return to supplier**
 - If the goods are damaged or wrong
@@ -162,7 +151,7 @@ So stock should **not** increase when you create it.
 
 Two important things:
 
-1. **Save the price inside the order.** Don't just link to the product. If you change the product price next month, all your old bills would change too, which is wrong.
+1. **Save the price inside the order.** Don't just link to the product. If we change the product price next month, all your old bills would change too, which is wrong.
 2. **Lock the product row while reducing stock.** If two sales staff sell the last item at the same second, both would succeed and your stock would go negative.
 
 **Edit a sales order**
@@ -173,7 +162,7 @@ Two important things:
 **Cancel a sales order**
 - Put the stock back
 - Save a new record for the cancellation — don't delete the old sale record
-- If it is already delivered, you cannot cancel it, use a return
+- If it is already delivered, we cannot cancel it, use a return
 
 **View sales orders**
 - Sales Staff sees only their own orders
@@ -189,7 +178,7 @@ Two important things:
 
 ## 8. Customers
 
-Customers are the people you **sell** to.
+Customers are the people we **sell** to.
 
 **Add / Edit**
 - Fill in: name, email, phone, billing address, delivery address
