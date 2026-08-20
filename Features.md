@@ -90,7 +90,7 @@
 
 **Edit a purchase order**
 - Draft → we can change anything
-- Approved → only small things like notes
+- Approved 
 - Already received → cannot change
 
 **Receive a purchase order** (Storekeeper)
