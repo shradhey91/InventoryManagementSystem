@@ -1,281 +1,274 @@
 # Inventory Management System
 
-Role-based tracking of products, stock, suppliers, customers, purchases, and sales.
 
-## Roles
+## 1. Login and User Roles
 
-- **Super Admin** — everything, incl. users and settings
-- **Admin** — catalog, suppliers, customers, PO approval
-- **Storekeeper** — receiving, stock counts, adjustments
-- **Sales Staff** — customers, sales orders
+**Login**
+- User types email and password
+- System checks if the password is correct
+- If correct, user gets a token and goes to the dashboard
+- If wrong, show "invalid email or password" (don't tell them which one was wrong)
+- After too many wrong tries, lock the account for some time
 
----
+**Logout**
+- Delete the user's token
+- Send them back to the login page
 
-## 1. Authentication & Authorization
+**Managing users** (only Super Admin)
+- Add a user by entering name, email and role
+- Send them a link so they can set their own password
+- Change someone's role
+- Turn off an account when someone leaves
+- Two rules: emails must be different for each user, and there must always be at least one Super Admin
 
-**Login** — anyone
-- Verify hash → check active and unlocked → issue access + refresh token
-- Generic error on failure; never reveal if email exists
-- Lock account after repeated failures
-
-**Logout** — any user
-- Delete refresh token; access token expires in minutes
-
-**User Management** — Super Admin (Admin: view only)
-- Create: name, email, role → setup link → user sets own password
-- Change role: takes effect on next token refresh
-- Deactivate: mark inactive + delete refresh tokens → logged out everywhere
-- Email unique; can't demote self; one active Super Admin must remain
-
-**RBAC** — system, every request
-- Verify token → load permissions → check route permission → allow or 403
-- Check by permission name (`product.delete`), not role name
+**Roles**
+- Every user has one role
+- Each role has a list of things it is allowed to do
+- Before doing anything, the system checks if that user's role is allowed
+- Important: check this on the **backend**, not just by hiding buttons in the frontend
 
 ---
 
-## 2. Product Management
+## 2. Products
 
-**Add** — Admin+
-- Fields: SKU, name, category, supplier, cost price, selling price, quantity, reorder level, unit
-- SKU unique via DB constraint
-- Opening quantity writes an `ADJUSTMENT`
+**Add a product**
+- Fill in: SKU (unique code), name, category, supplier, cost price, selling price, quantity, reorder level, unit (kg, pieces, box)
+- SKU must be unique — no two products can have the same one
+- Cost price = what you paid. Selling price = what you charge. You need both.
+- Reorder level = when stock falls to this number, it counts as "low"
 
-**Update** — Admin+
-- Quantity **not editable here** — only via Stock Adjustment
-- Past orders unaffected (they snapshot price)
+**Edit a product**
+- Change any field except quantity
+- Quantity can only change through Stock Adjustment, so there is always a reason recorded
 
-**Delete** — Admin+
-- Referenced by an order → mark inactive
-- Never referenced and stock zero → remove
-- Blocked if holding stock or on an open order
+**Delete a product**
+- If the product is on any old order → don't really delete it, just mark it inactive
+- If it was never used and stock is 0 → you can delete it fully
+- Deleting a product that is on an old order would break your order history
 
-**View / View All** — all roles
-- Paginated, active-only default; filter by category, supplier, stock status
-- Sales Staff: no cost price
+**View products**
+- Show a list with page numbers (don't load all products at once)
+- Filter by category, supplier, or stock status
+- Sales Staff should not see the cost price
 
-**Search** — all roles
-- Min 2 chars, debounced, partial match on SKU + name
-
----
-
-## 3. Category Management
-
-**Create / Update** — Admin+
-- Name required and unique
-- Products link by id, so renaming is safe
-
-**Delete** — Admin+
-- Products in category → block, report count
-- Empty → mark inactive
-
-**View Categories** — all roles
-- Active categories with product counts
-
-**View Products by Category** — all roles
-- Product list filtered by category
+**Search products**
+- Search by name or SKU
+- Wait until the user stops typing before searching
 
 ---
 
-## 4. Supplier Management
+## 3. Categories
 
-**Add / Update** — Admin+
-- Fields: company, contact, email, phone, address, payment terms
-- Duplicate check warns, doesn't block
+**Add / Edit**
+- Just a name and description
+- Two categories can't have the same name
 
-**Delete** — Admin+
-- Open POs → block and list them
-- Else mark inactive
+**Delete**
+- If products are using this category → don't allow delete, show how many products are using it
+- If empty → mark it inactive
 
-**View / Search** — Admin+, Storekeeper (read-only)
-- Detail: contacts, products sourced, PO history
-- Search on name, contact, email, phone
-- Sales Staff: no access (exposes cost data)
-
----
-
-## 5. Stock Management
-
-Not a separate table — all views filter products by quantity vs reorder level.
-
-**Views** — all roles
-- Current stock: all active products + status label
-- In stock: `qty > reorder_level`
-- Low stock: `0 < qty <= reorder_level`, urgent first
-- Out of stock: `qty = 0`
-- From low stock → generate draft PO grouped by supplier
-
-**Stock Adjustment** — Storekeeper, Admin+
-- Enter counted quantity → pick reason → system writes signed `ADJUSTMENT` → updates quantity
-- Reasons: Damaged, Expired, Lost/Stolen, Count Correction, Opening Balance
-- Reason mandatory — only place stock moves without an order behind it
+**View**
+- Show all categories with how many products are in each
+- Click a category to see its products
 
 ---
 
-## 6. Purchase Order Management
+## 4. Suppliers
 
-A PO is a promise to buy, not inventory.
+Suppliers are the people you **buy** from.
 
-**Create** — Admin+
-- Select supplier → add lines (product, qty, unit cost) → total recalcs → draft → approve
-- Supplier active, ≥1 line, qty > 0
-- **No stock effect**
+**Add / Edit**
+- Fill in: company name, contact person, email, phone, address
+- Show a warning if a similar supplier already exists
 
-**Update** — Admin+
-- Draft: everything
-- Pending approval: everything, approval resets
-- Approved: notes and dates only
-- Received / partially received / cancelled: nothing
+**Delete**
+- If there are pending purchase orders → don't allow it
+- Otherwise mark inactive
 
-**Receive** — Storekeeper
-- Enter qty actually received per line (may be partial, may span deliveries)
-- One transaction: bump received qty, increase stock, write `PURCHASE` per line
-- All lines complete → received; else partially received
-- Received never exceeds ordered
-- **Only way stock enters via purchasing**
-
-**Cancel** — Admin+
-- Nothing received → cancelled, no stock effect
-- Partially received → cancel outstanding balance only
-- Fully received → not cancellable, use a return
-
-**View** — Admin+ (all), Storekeeper (approved, for receiving)
-- Filter by status, supplier, date; detail shows ordered vs received per line
-
-**Purchase Return** — Storekeeper raises, Admin approves
-- Select lines from received order → qty + reason → stock decreases, `RETURN_OUT` written
+**View / Search**
+- Show a list with page numbers
+- Click a supplier to see their details and past orders
+- Search by name, email or phone
+- Sales Staff should not see suppliers (it shows cost prices)
 
 ---
 
-## 7. Sales / Order Management
+## 5. Stock
 
-**Create** — Sales Staff, Admin+
-- Select or inline-create customer → add lines → available stock shown per line
-- On confirm, one transaction: lock rows, re-check stock, decrease stock, write `SALE` per line
-- Any line fails → full rollback
-- **Snapshot price onto the line** — else a future price change rewrites old invoices
-- **Lock rows** — two staff selling the last unit is a real race condition
+There is no separate stock table. Stock is just the quantity column in the products table.
+These pages are the same product list, filtered differently:
 
-**Update** — Sales Staff (own), Admin+
-- Reverse the whole original stock effect, then reapply the new version, in one transaction
-- Easier to verify than per-line deltas; handles added and removed lines identically
-- Blocked once shipped, delivered, or cancelled
+- **Current stock** — all products with their quantity
+- **In stock** — quantity is more than the reorder level
+- **Low stock** — quantity is between 1 and the reorder level
+- **Out of stock** — quantity is 0
 
-**Cancel** — Sales Staff (own, pre-ship), Admin+
-- Return full qty to stock, write `CANCELLATION` per line
-- Original `SALE` rows never edited
-- Delivered → not cancellable, use a return
+From the low stock page, the Admin can quickly create a purchase order for those items.
 
-**View** — Sales Staff (own), Admin+ (all)
-- Filter by status, customer, date; detail shows snapshot prices and linked transactions
-
-**Sales Return** — Sales Staff raises, Admin approves
-- Select lines from delivered order → qty, reason, resaleable flag
-- Resaleable → stock increases, `RETURN_IN`
-- Damaged → no stock increase, `ADJUSTMENT` write-off
+**Stock adjustment** (Storekeeper and Admin)
+- Sometimes real stock does not match the system — items get damaged, expired, stolen, or miscounted
+- The storekeeper enters the real counted quantity
+- Then picks a reason: Damaged, Expired, Lost, Wrong Count
+- The system saves the difference with that reason
+- Reason must be compulsory, otherwise you will never know why stock changed
 
 ---
 
-## 8. Customer Management
+## 6. Purchase Orders (buying from suppliers)
 
-**Add / Update** — Sales Staff, Admin+
-- Fields: name, email, phone, billing + shipping address
-- Duplicate check on email and phone
-- Can be created inline from the sales order screen
-- Past orders keep their shipped-to address
+**Important:** a purchase order is just an order you placed. The goods have not arrived yet.
+So stock should **not** increase when you create it.
 
-**Delete** — Admin+ only
-- Open orders → block and list them; else mark inactive
-- Sales Staff deliberately cannot delete
+**Create a purchase order**
+- Pick a supplier
+- Add products with quantity and price
+- The total is calculated automatically
+- Save as draft, then submit it for approval
+- Admin approves it, then you send it to the supplier
+- Stock does not change here
 
-**View / Search** — Sales Staff, Admin+
-- Detail: contacts, order history, lifetime value, last order date
-- Search on name, email, phone
+**Edit a purchase order**
+- Draft → you can change anything
+- Approved → only small things like notes
+- Already received → cannot change
+
+**Receive a purchase order** (Storekeeper)
+- This happens when the goods actually arrive at the store
+- The storekeeper enters how many items actually came
+- Sometimes only some of them arrive, so allow partial receiving
+- Now the stock increases
+- Save a record of it in the transaction table
+- If everything arrived → mark as received. If only some → mark as partly received
+
+**Cancel a purchase order**
+- If nothing arrived yet → just cancel it
+- If some items already arrived → only cancel the remaining ones (you already have the other goods)
+- If everything arrived → you cannot cancel, you must return it instead
+
+**Return to supplier**
+- If the goods are damaged or wrong
+- Stock goes down and a record is saved
 
 ---
 
-## 9. Inventory Transaction Management
+## 7. Sales Orders (selling to customers)
 
-Append-only ledger. Never update or delete a row — corrections are new rows.
+**Create a sales order**
+- Pick a customer (or add a new one right there)
+- Add products with quantity and price
+- Show the available stock next to each product
+- When confirmed: check stock again, reduce the stock, and save a record
+- If any product does not have enough stock → cancel the whole thing, don't save half of it
 
-Each row: product, type, **signed** quantity, reference, user, reason, timestamp.
-Signed quantity means a product's balance is a plain sum.
+Two important things:
 
-**Products added (positive)**
-- `PURCHASE` — PO received
-- `RETURN_IN` — customer return, resaleable
-- `ADJUSTMENT` — upward correction
-- `CANCELLATION` — confirmed sale cancelled
+1. **Save the price inside the order.** Don't just link to the product. If you change the product price next month, all your old bills would change too, which is wrong.
+2. **Lock the product row while reducing stock.** If two sales staff sell the last item at the same second, both would succeed and your stock would go negative.
 
-**Products sold (negative)**
-- `SALE` — sales order confirmed
-- `RETURN_OUT` — return to supplier
-- `ADJUSTMENT` — downward correction
+**Edit a sales order**
+- Only if it is not shipped yet
+- Easiest way: put back all the old stock, then subtract the new quantities again
+- This is much simpler than calculating the difference for each line
 
-**Returns**
-- Both directions recorded here, always referencing the order that caused them
+**Cancel a sales order**
+- Put the stock back
+- Save a new record for the cancellation — don't delete the old sale record
+- If it is already delivered, you cannot cancel it, use a return
 
-**View history** — Admin+ and Storekeeper (all, read-only), Sales Staff (own)
-- Filter by product, type, date, user; each row links back to its source order
-- Per-product running balance traces drift to a specific entry
-- Ledger sum must equal stored quantity — mismatch means something bypassed the stock service
+**View sales orders**
+- Sales Staff sees only their own orders
+- Admin sees all orders
+- Filter by date, customer or status
+
+**Customer return**
+- Customer brings back the goods
+- If the item is still good → add it back to stock
+- If it is damaged → do not add it back, just record the loss
+
+---
+
+## 8. Customers
+
+Customers are the people you **sell** to.
+
+**Add / Edit**
+- Fill in: name, email, phone, billing address, delivery address
+- Warn if a customer with the same email or phone already exists
+- You should be able to add a customer directly from the sales order page
+
+**Delete** (only Admin)
+- If they have pending orders → don't allow it
+- Otherwise mark inactive
+- Sales Staff can add and edit customers but not delete them
+
+**View / Search**
+- Show contact details and all their past orders
+- Search by name, email or phone
+
+---
+
+## 9. Transactions (stock history)
+
+This is a history table. Every time stock changes, add one row here.
+**Never edit or delete these rows.** If something is wrong, add a new row to fix it.
+
+Each row saves: which product, what type, how much, which order caused it, which user did it, and the time.
+
+Use plus and minus numbers so you can just add them all up to get the current stock.
+
+**Stock goes up (+)**
+- Purchase received
+- Customer returned a good item
+- Stock adjustment upward
+- Sales order was cancelled
+
+**Stock goes down (−)**
+- Sale confirmed
+- Returned something to the supplier
+- Stock adjustment downward
+
+**Viewing history**
+- Filter by product, date, type or user
+- Click any row to see which order caused it
+- Good check: adding up all rows of a product should equal the quantity in the product table. If not, something is wrong somewhere.
 
 ---
 
 ## 10. Dashboard
 
-Widgets the user can't access are omitted server-side.
+The first page after login. Show only what that role is allowed to see.
 
-**Summary**
-- Total products, total categories — all roles
-- Total suppliers — Admin+, Storekeeper
-- Total stock quantity — all roles
+**Counts**
+- Total products
+- Total categories
+- Total suppliers
+- Total stock quantity
 
-**Stock alerts** — all roles
-- Low stock, out of stock
-- Clickable → filtered stock list → draft PO
+**Alerts**
+- Low stock products
+- Out of stock products
+- Clicking these should take you to that filtered list
 
 **Recent activity**
-- Today's sales, recent sales orders — Sales, Admin+
-- Recent purchase orders — Storekeeper, Admin+
+- Today's sales
+- Last 5 sales orders
+- Last 5 purchase orders
 
-**Notes**
-- Run widget queries concurrently behind one endpoint; cache briefly
-- Summing stock across mixed units (kg + pieces + boxes) is meaningless — use one unit or show stock value instead
+**Two tips**
+- This page runs many queries. Run them together, not one after another, and store the result for a minute or two.
+- "Total stock quantity" is a bit useless if some products are in kg and some in pieces. You can't add 5 kg and 3 boxes. Better to show total stock **value** (quantity × cost price).
 
 ---
 
-## Order Statuses
+## Order statuses
 
 **Purchase order**
-- Draft → pending approval → approved → partially received → received
-- Cancellable any time before full receipt
-- Stock increases only on partially received or received
+- Draft → Waiting for approval → Approved → Partly received → Received
+- Can be cancelled any time before it is fully received
+- Stock only increases at the receiving step
 
 **Sales order**
-- Draft → confirmed → shipped → delivered → returned
-- Cancellable before shipping
-- Stock decreases on confirmed; restored on cancelled and on resaleable returns
+- Draft → Confirmed → Shipped → Delivered → Returned
+- Can be cancelled before shipping
+- Stock reduces when confirmed, and comes back if cancelled or returned
 
----
-
-## Permissions
-
-- **Users** — Super Admin full; Admin view
-- **Products, categories** — Admin+ full; others view (Sales Staff without cost price)
-- **Suppliers** — Admin+ full; Storekeeper view; Sales Staff none
-- **Customers** — Admin+ full; Sales Staff create/update/view
-- **Stock** — Admin+ full; Storekeeper view + adjust; Sales Staff view
-- **Purchase orders** — Admin+ full; Storekeeper receive + return
-- **Sales orders** — Admin+ full; Sales Staff create/update/cancel own
-- **Transactions** — Super Admin full; Admin and Storekeeper view; Sales Staff own
-- **Dashboard** — Admin+ all; Storekeeper stock widgets; Sales Staff sales widgets
-
----
-
-## Cross-Cutting Rules
-
-- **One stock service.** Nothing updates quantity directly — keeps ledger and cached quantity in sync
-- **Atomic multi-step operations.** Order, lines, quantities, and ledger succeed or fail together
-- **Snapshot prices and addresses onto orders.** Historical documents must not change retroactively
-- **Soft deletes.** Anything on an order is deactivated, never removed
-- **Server is the only authority** on totals, permissions, and stock availability
