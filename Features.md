@@ -17,11 +17,6 @@
 - Add a user by entering name, email and role
 - Change someone's role
 
-**Roles**
-- Every user has one role
-- Each role has a list of things it is allowed to do
-- Before doing anything, the system checks if that user's role is allowed
-
 ---
 
 ## 2. Products
@@ -64,11 +59,8 @@
 
 ## 4. Suppliers
 
-Suppliers are the people we **buy** from.
-
 **Add / Edit**
-- Fill in: company name, contact person, email, phone, address
-- Show a warning if a similar supplier already exists
+- Fill : company name, contact person, email, phone, address
 
 **Delete**
 - If there are pending purchase orders → don't allow it
@@ -78,28 +70,14 @@ Suppliers are the people we **buy** from.
 - Show a list with page numbers
 - Click a supplier to see their details and past orders
 - Search by name, email or phone
-- Sales Staff should not see suppliers (it shows cost prices)
 
 ---
 
 ## 5. Stock
 
-There is no separate stock table. Stock is just the quantity column in the products table.
-These pages are the same product list, filtered differently:
-
 - **Current stock** — all products with their quantity
 - **In stock** — quantity is more than the reorder level
-- **Low stock** — quantity is between 1 and the reorder level
 - **Out of stock** — quantity is 0
-
-From the low stock page, the Admin can quickly create a purchase order for those items.
-
-**Stock adjustment** (Storekeeper and Admin)
-- Sometimes real stock does not match the system — items get damaged, expired, stolen, or miscounted
-- The storekeeper enters the real counted quantity
-- Then picks a reason: Damaged, Expired, Lost, Wrong Count
-- The system saves the difference with that reason
-- Reason must be compulsory, otherwise we will never know why stock changed
 
 ---
 
