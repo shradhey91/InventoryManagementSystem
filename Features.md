@@ -109,7 +109,7 @@
 **Edit a sales order**
 
 **Cancel a sales order**
--
+
 **View sales orders**
 
 **Customer return**
