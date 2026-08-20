@@ -83,16 +83,10 @@
 
 ## 6. Purchase Orders (buying from suppliers)
 
-**Important:** a purchase order is just an order we placed. The goods have not arrived yet.
-So stock should **not** increase when we create it.
-
 **Create a purchase order**
 - Pick a supplier
 - Add products with quantity and price
 - The total is calculated automatically
-- Save as draft, then submit it for approval
-- Admin approves it, then we send it to the supplier
-- Stock does not change here
 
 **Edit a purchase order**
 - Draft → we can change anything
@@ -100,73 +94,38 @@ So stock should **not** increase when we create it.
 - Already received → cannot change
 
 **Receive a purchase order** (Storekeeper)
-- This happens when the goods actually arrive at the store
-- The storekeeper enters how many items actually came
-- Sometimes only some of them arrive, so allow partial receiving
-- Now the stock increases
-- Save a record of it in the transaction table
-- If everything arrived → mark as received. If only some → mark as partly received
 
 **Cancel a purchase order**
-- If nothing arrived yet → just cancel it
-- If some items already arrived → only cancel the remaining ones (we already have the other goods)
-- If everything arrived → we cannot cancel, we must return it instead
 
 **Return to supplier**
 - If the goods are damaged or wrong
-- Stock goes down and a record is saved
 
 ---
 
 ## 7. Sales Orders (selling to customers)
 
 **Create a sales order**
-- Pick a customer (or add a new one right there)
-- Add products with quantity and price
-- Show the available stock next to each product
-- When confirmed: check stock again, reduce the stock, and save a record
-- If any product does not have enough stock → cancel the whole thing, don't save half of it
-
-Two important things:
-
-1. **Save the price inside the order.** Don't just link to the product. If we change the product price next month, all your old bills would change too, which is wrong.
-2. **Lock the product row while reducing stock.** If two sales staff sell the last item at the same second, both would succeed and your stock would go negative.
 
 **Edit a sales order**
-- Only if it is not shipped yet
-- Easiest way: put back all the old stock, then subtract the new quantities again
-- This is much simpler than calculating the difference for each line
 
 **Cancel a sales order**
-- Put the stock back
-- Save a new record for the cancellation — don't delete the old sale record
-- If it is already delivered, we cannot cancel it, use a return
-
+-
 **View sales orders**
-- Sales Staff sees only their own orders
-- Admin sees all orders
-- Filter by date, customer or status
 
 **Customer return**
 - Customer brings back the goods
-- If the item is still good → add it back to stock
-- If it is damaged → do not add it back, just record the loss
 
 ---
 
 ## 8. Customers
 
-Customers are the people we **sell** to.
 
 **Add / Edit**
 - Fill in: name, email, phone, billing address, delivery address
-- Warn if a customer with the same email or phone already exists
-- You should be able to add a customer directly from the sales order page
 
 **Delete** (only Admin)
 - If they have pending orders → don't allow it
 - Otherwise mark inactive
-- Sales Staff can add and edit customers but not delete them
 
 **View / Search**
 - Show contact details and all their past orders
@@ -176,12 +135,6 @@ Customers are the people we **sell** to.
 
 ## 9. Transactions (stock history)
 
-This is a history table. Every time stock changes, add one row here.
-**Never edit or delete these rows.** If something is wrong, add a new row to fix it.
-
-Each row saves: which product, what type, how much, which order caused it, which user did it, and the time.
-
-Use plus and minus numbers so you can just add them all up to get the current stock.
 
 **Stock goes up (+)**
 - Purchase received
@@ -196,14 +149,11 @@ Use plus and minus numbers so you can just add them all up to get the current st
 
 **Viewing history**
 - Filter by product, date, type or user
-- Click any row to see which order caused it
-- Good check: adding up all rows of a product should equal the quantity in the product table. If not, something is wrong somewhere.
 
 ---
 
 ## 10. Dashboard
 
-The first page after login. Show only what that role is allowed to see.
 
 **Counts**
 - Total products
@@ -214,16 +164,11 @@ The first page after login. Show only what that role is allowed to see.
 **Alerts**
 - Low stock products
 - Out of stock products
-- Clicking these should take you to that filtered list
 
 **Recent activity**
 - Today's sales
 - Last 5 sales orders
 - Last 5 purchase orders
-
-**Two tips**
-- This page runs many queries. Run them together, not one after another, and store the result for a minute or two.
-- "Total stock quantity" is a bit useless if some products are in kg and some in pieces. You can't add 5 kg and 3 boxes. Better to show total stock **value** (quantity × cost price).
 
 ---
 
