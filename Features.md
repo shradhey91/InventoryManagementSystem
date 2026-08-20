@@ -184,3 +184,125 @@
 - Can be cancelled before shipping
 - Stock reduces when confirmed, and comes back if cancelled or returned
 
+
+## Schema
+
+**Users Table**
+- id
+- name
+- email 
+- password 
+- role (SuperAdmin, Admin, Staff)
+- isActive
+- createdAt
+
+**Categories Table**
+- id
+- name
+- description
+- isActive
+
+**Products Table**
+- id
+- sku 
+- name
+- description
+- categoryId (FK - Categories)
+- costPrice 
+- sellingPrice 
+- quantity 
+- unit (kg, pieces, box)
+- reorderLevel 
+- isActive
+- createdBy (FK - Users)
+- createdAt
+
+**Customers Table**
+- id
+- name
+- email
+- phone
+- billingAddress
+- deliveryAddress
+- isActive
+
+**SalesOrder Table**
+- id
+- customerId (FK - Customers)
+- status (Draft, Confirmed, Shipped, Delivered, Cancelled, Returned)
+- orderDate
+- subTotal
+- discount
+- tax
+- total
+- createdBy (FK - Users)
+- shippedAt
+- deliveredAt
+
+**SalesOrderItems Table**
+- id
+- salesOrderId (FK - SalesOrder)
+- productId (FK - Products)
+- quantity
+- unitPriceneeded a table in the middle. That middle table also keeps quantity and price.
+- TotalPrice
+
+**SalesReturns Table**
+- id
+- salesOrderId (FK - SalesOrder)
+- customerId (FK - Customers)
+- reason
+- createdAt
+
+**SalesReturnItems Table**
+- id
+- salesReturnId (FK - SalesReturns)
+- productId (FK - Products)
+- quantity
+
+**StockAdjustments Table**
+- id
+- productId (FK - Products)
+- quantityChange 
+- reason (Restock, Damaged, Lost, Expired, CountCorrection)
+- notes
+- createdBy (FK - Users)
+- createdAt
+
+**StockTransactions Table**
+- id
+- productId (FK - Products)
+- type (OpeningStock, AdjustmentIn, SaleCancelled, CustomerReturn, Sale, AdjustmentOut)
+- quantityChange
+- quantityAfter (stock left after this row)
+- referenceType (SalesOrder, SalesReturn, StockAdjustment, Product)
+- referenceId
+- userId (FK - Users)
+- createdAt
+
+## Relations
+
+**One to many**
+- Categories to Products (one category has many products)
+- Users to Products (one user adds many products)
+- Users to SalesOrder (one user makes many orders)
+- Users to StockAdjustments
+- Customers to SalesOrder (one customer has many orders)
+- SalesOrder to SalesOrderItems (one order has many items)
+- SalesOrder to SalesReturns (customer can return in parts)
+- SalesReturns to SalesReturnItems
+- Products to SalesOrderItems
+- Products to StockAdjustments
+- Products to StockTransactions
+
+**Many to many**
+- Products and SalesOrder (through SalesOrderItems)
+- Products and SalesReturns (through SalesReturnItems)
+
+
+
+
+
+
+
+
